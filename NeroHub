@@ -1,133 +1,48 @@
 local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
-local window = DrRayLibrary:Load("NeroHub V.2 by:Piol", "Default")
+local window = DrRayLibrary:Load("Trade System", "Default")
 
--- Game-Specific Variables (Modify according to your game)
-local PLAYER = game:GetService("Players").LocalPlayer
-local REPLICATOR = game:GetService("ReplicatedStorage")
-local MOB_LIST = {"Bandit", "Brute", "Troll", "Dragonling"}
-local QUEST_NPCS = {"John", "Blacksmith", "Merchant"}
-local TELEPORT_LOCATIONS = {
-    ["Spawn"] = CFrame.new(0, 5, 0),
-    ["Forest"] = CFrame.new(150, 20, -300),
-    ["Dungeon"] = CFrame.new(-200, 50, 500)
-}
+-- Create tab for trade features
+local tradeTab = DrRayLibrary.newTab("Trade Controls", "Default")
 
--- State Management
-local autoFarmEnabled = false
-local autoQuestEnabled = false
-local autoSellEnabled = false
+-- State management variables
+local tradeFreezeEnabled = false
+local freezePlayerEnabled = false
+local forceAcceptEnabled = false
 
--- Create Tabs
-local combatTab = DrRayLibrary.newTab("Combat", "Default")
-local farmTab = DrRayLibrary.newTab("Farming", "Default")
-local teleTab = DrRayLibrary.newTab("Teleport", "Default")
-local miscTab = DrRayLibrary.newTab("Misc", "Default")
-
--- Auto-Farm System
-farmTab.newLabel("Auto-Farm Settings")
-farmTab.newLabel("───────────────")
-
-local selectedMob = ""
-farmTab.newDropdown("Select Mob", "Choose target for farming", MOB_LIST, function(mob)
-    selectedMob = mob
-end)
-
-farmTab.newToggle("Auto-Farm", "Automatically attack nearby enemies", false, function(state)
-    autoFarmEnabled = state
-    while autoFarmEnabled and selectedMob ~= "" do
-        local target = findNearestEnemy(selectedMob)
-        if target and target.Humanoid.Health > 0 then
-            attackTarget(target)
+-- Main toggle control
+tradeTab.newToggle("Trade Freeze", "Master control for trade freezing", false, function(mainState)
+    tradeFreezeEnabled = mainState
+    print("Trade Freeze:", mainState and "ENABLED" or "DISABLED")
+    
+    if not mainState then
+        -- Automatically disable child features when main toggle is off
+        if freezePlayerEnabled then
+            print("Auto-disabled Freeze Player")
+            freezePlayerEnabled = false
         end
-        task.wait(0.5)
-    end
-end)
-
--- Auto-Quest System
-farmTab.newLabel("\nAuto-Quest Settings")
-farmTab.newLabel("───────────────")
-
-local selectedQuest = ""
-farmTab.newDropdown("Select Quest", "Choose quest to automate", QUEST_NPCS, function(npc)
-    selectedQuest = npc
-end)
-
-farmTab.newToggle("Auto-Quest", "Automatically complete quests", false, function(state)
-    autoQuestEnabled = state
-    while autoQuestEnabled do
-        local npc = findNPC(selectedQuest)
-        if npc then
-            completeQuest(npc)
-            claimReward(npc)
+        if forceAcceptEnabled then
+            print("Auto-disabled Force Accept")
+            forceAcceptEnabled = false
         end
-        task.wait(5)
     end
 end)
 
--- Teleport System
-teleTab.newLabel("Quick Teleports")
-teleTab.newLabel("───────────────")
-
-for locationName, _ in pairs(TELEPORT_LOCATIONS) do
-    teleTab.newButton(locationName, "Teleport to "..locationName, function()
-        teleportToLocation(locationName)
-    end)
-end
-
--- Misc Features
-miscTab.newLabel("Automation Tools")
-miscTab.newLabel("───────────────")
-
-miscTab.newToggle("Auto-Sell", "Automatically sell items", false, function(state)
-    autoSellEnabled = state
-    while autoSellEnabled do
-        sellItems()
-        task.wait(60) -- Sell every minute
+-- Sub-feature 1
+tradeTab.newToggle("   → Freeze Player", "Prevent trade modifications", false, function(state)
+    if not tradeFreezeEnabled then
+        print("Enable Trade Freeze first!")
+        return
     end
+    freezePlayerEnabled = state
+    print("Player Freeze:", state and "ACTIVE" or "INACTIVE")
 end)
 
--- Core Functions (Game-Specific Implementation Required)
-function findNearestEnemy(mobName)
-    -- Implement your enemy finding logic here
-    return workspace:FindFirstChild(mobName)
-end
-
-function attackTarget(target)
-    -- Implement your combat system here
-    PLAYER.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame
-end
-
-function findNPC(npcName)
-    -- Implement NPC finding logic
-    return workspace.NPCs:FindFirstChild(npcName)
-end
-
-function completeQuest(npc)
-    -- Implement quest acceptance logic
-    fireServer(REPLICATOR.Quests.AcceptQuest, npc.Name)
-end
-
-function claimReward(npc)
-    -- Implement reward collection logic
-    fireServer(REPLICATOR.Quests.ClaimReward, npc.Name)
-end
-
-function teleportToLocation(locationName)
-    local cf = TELEPORT_LOCATIONS[locationName]
-    if cf then
-        PLAYER.Character.HumanoidRootPart.CFrame = cf
+-- Sub-feature 2
+tradeTab.newToggle("   → Force Accept", "Auto-accept trade conditions", false, function(state)
+    if not tradeFreezeEnabled then
+        print("Enable Trade Freeze first!")
+        return
     end
-end
-
-function sellItems()
-    -- Implement auto-sell logic
-    fireServer(REPLICATOR.Shop.SellAll)
-end
-
--- Theme Customization
-window:SetTheme(
-    Color3.fromRGB(30, 0, 50),  -- Dark purple main
-    Color3.fromRGB(255, 50, 150) -- Pink secondary
-)
-
-window:Open()
+    forceAcceptEnabled = state
+    print("Force Accept:", state and "ACTIVE" or "INACTIVE")
+end)
